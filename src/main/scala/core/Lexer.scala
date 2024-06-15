@@ -1,6 +1,4 @@
-package lexer;
-
-import token.*;
+package core;
 
 //exp ::= stmt ::= exp ::= stmt ::= LVar ::=
 //int | input_int() | -exp | exp+exp | exp-exp | (exp) print(exp) | exp
@@ -9,8 +7,14 @@ import token.*;
 //stmt∗
 import scala.collection.mutable.ListBuffer
 
-class Lexer {
-  def tokenize(input: String): List[Token] = {
+class Lexer:
+
+  var tokens: List[Token] = List()
+  var currentToken: Token = Token.Invalid
+  var nextToken: Token = Token.Invalid
+  private var i = 0
+
+  def tokenize(input: String): Unit = {
     val tokens = new ListBuffer[Token]
     var i = 0
     while (i < input.length) {
@@ -35,15 +39,30 @@ class Lexer {
       } else if (c == '\n') {
         tokens += Token.EOF
         i += 1
+      } else if (c == '=') {
+        tokens += Token.Assign
+        i += 1;
       } else if (c == ' ') {
         i += 1;
       } else {
         val startOfSpace = input.substring(i).indexWhere(_.isSpaceChar);
         val name = input.substring(i, i + startOfSpace);
-        tokens += Token.Identifier(name)
+        name match {
+          case "var" => tokens += Token.Var;
+          case _     => tokens += Token.Identifier(name);
+        }
         i += name.length
       }
     }
-    tokens.toList
+    this.tokens = tokens.toList
   }
-}
+
+  def hasNext(): Boolean = {
+    i < tokens.length
+  }
+
+  def advance(): Unit = {
+    currentToken = nextToken;
+    nextToken = tokens(i);
+    i += 1;
+  }
