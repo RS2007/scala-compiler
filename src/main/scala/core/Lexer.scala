@@ -49,6 +49,7 @@ class Lexer:
         val name = input.substring(i, i + startOfSpace);
         name match {
           case "var" => tokens += Token.Var;
+          case "print" => tokens += Token.Print;
           case _     => tokens += Token.Identifier(name);
         }
         i += name.length
@@ -63,6 +64,8 @@ class Lexer:
 
   def advance(): Unit = {
     currentToken = nextToken;
-    nextToken = tokens(i);
+    if i < tokens.length then 
+      nextToken = tokens(i);
     i += 1;
   }
+
