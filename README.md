@@ -77,3 +77,12 @@ add sp,sp,112
     print(t3)
     print(z)
 ```
+
+#### Constructing a dataflow graph
+
+
+
+#### Construction of interference graph
+
+
+
