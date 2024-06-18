@@ -4,6 +4,7 @@ import java.util.ArrayList
 import java.util.HashMap
 import java.util.HashMap
 import scala.collection.JavaConverters.asScalaBufferConverter
+import core.CFG;
 
 object AST {
 
@@ -229,5 +230,19 @@ _main:
       });
       result
     }
+
+    def constructCFG(): CFG.Node = {
+      val start = CFG.start();
+      var lastTillNow = start;
+      statements.forEach((statement: StatementNode)=>{
+        val stmtCFG = (CFG.create(statement))
+        lastTillNow.successors += stmtCFG;
+        lastTillNow = stmtCFG;
+      })
+      val succesors = lastTillNow.successors
+      succesors += CFG.end();
+      start
+    }
+
   }
 }

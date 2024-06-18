@@ -19,9 +19,15 @@ import scala.sys.process._
   val programTAC = parser.parse(lexerTAC)
 
   val generated = programTAC.codegen(symTab);
-  val filePath = Paths.get("test3.s")
-  Files.write(filePath, generated.getBytes(StandardCharsets.UTF_8))
-  val command = "gcc -g -o test3 test3.s" // Command to list files and directories
-  command.!!
+
+  var cfg = programTAC.constructCFG();
+  CFG.prettyPrint(cfg);
+
+
+  //val filePath = Paths.get("test3.s")
+  //Files.write(filePath, generated.getBytes(StandardCharsets.UTF_8))
+  //val command = "gcc -g -o test3 test3.s" 
+  // Command to list files and directories
+  // command.!!
 
 def msg = "I was compiled by Scala 3. :)"
