@@ -51,3 +51,29 @@ add sp,sp,112
 
 ```
 
+
+#### Conversion to TAC
+
+- assign all locals to temp
+
+```scala
+    var x = 3
+    var y = 2
+    var z = x + y - 5
+    print(x+y - 5)
+    print(z)
+```
+
+- Simple tree rewrite(can use the same parser,not a good practice though)
+
+```scala
+    var x = 3
+    var y = 2
+    // all infix expressions assigned to a temp
+    var t1 = y - 5
+    var z = x + t1
+    var t3 = y - 5
+    var t2 = x + t3
+    print(t3)
+    print(z)
+```

@@ -8,9 +8,13 @@ import scala.collection.JavaConverters.asScalaBufferConverter
 object AST {
 
   private var stackTillNow = 0;
+  private var count = 0;
 
   def genTemp(): String = {
-    "sup"
+    val characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    assert(count < characters.length);
+    count += 1;
+    "t"+(characters.charAt(count-1))
   }
 
   enum InfixOp {
@@ -94,6 +98,32 @@ object AST {
         case InfixExpression(left,op,right)=> left.countLocals()+right.countLocals();
       }
     }
+    def codegenTAC(symbolTable: HashMap[String,Int],temp: String): String = {
+      expr match {
+        case IntLiteral(value) => {
+          "var %s = %d".format(temp,value)
+        }
+        case Identifier(value) => {
+          "var %s = %s".format(temp,value)
+        }
+        case InfixExpression(left, op, right) => {
+          val lhsTemp = genTemp();
+          val rhsTemp = genTemp();
+          val lhs = left.codegenTAC(symbolTable,lhsTemp);
+          val rhs = right.codegenTAC(symbolTable,rhsTemp);
+          val operation = op match {
+            case InfixOp.Plus => {
+              "var %s = %s + %s".format(temp,lhsTemp,rhsTemp)
+            }
+            case InfixOp.Minus => {
+              "var %s = %s - %s".format(temp,lhsTemp,rhsTemp)
+            }
+          }
+          "%s \n %s \n %s".format(lhs,rhs,operation)
+        }
+      }
+    }
+    
   }
 
   case class StatementNode(stmt: Statement) extends Node {
@@ -142,6 +172,21 @@ object AST {
         case PrintStatement(expr) => 1+expr.countLocals()
       }
     } 
+
+    def codegenTAC(symbolTable: HashMap[String,Int]): String = {
+      stmt match {
+        case AssignmentStatement(iden, expr) => {
+          val temp = genTemp();
+          val exprCode = expr.codegenTAC(symbolTable,temp);
+          "%s \n var %s = %s".format(exprCode,iden.value,temp);
+        }
+        case PrintStatement(expr) => {
+          val temp = genTemp();
+          val exprCode = expr.codegenTAC(symbolTable,temp);
+          "%s \n print ( %s )".format(exprCode,temp);
+        }
+      }
+    }
   }
 
   case class Program(statements: ArrayList[StatementNode]) extends Node {
@@ -173,6 +218,15 @@ _main:
       mov x16,#1
       svc #0x80
       """
+      result
+    }
+
+    def codegenTAC(symbolTable: HashMap[String,Int]): String = {
+      var result = ""
+      statements.forEach((statement: StatementNode) => {
+        val fromStmt = statement.codegenTAC(symbolTable)
+        result = result + fromStmt + " \n";
+      });
       result
     }
   }
