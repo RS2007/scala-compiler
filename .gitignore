@@ -33,3 +33,4 @@ metals.sbt
 
 # assembly files for sake of testing
 *.s
+test*

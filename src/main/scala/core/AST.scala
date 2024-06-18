@@ -60,15 +60,38 @@ object AST {
     override def codegen(symbolTable: HashMap[String,Int]): String = {
       expr match {
         case IntLiteral(value) => {
+          "mov x0,%d // Load number %d to x0".format(value,value)
+        } 
+        case Identifier(value) => {
+          val offset = symbolTable.get(value)
+          "ldr x0,[sp,%d] // Load identifier %s".format(offset,value)
+        }
+        case InfixExpression(left, op, right) => {
+          val lhs = left.codegen(symbolTable);
+          val rhs = right.codegen(symbolTable);
+          val operation = op match {
+            case InfixOp.Plus => {
+              "add x0,x1,x2 // infix operation add"
+            }
+            case InfixOp.Minus => {
+              "sub x0,x1,x2 // infix operation sub"
+            }
+          }
           """
           %s
-          """.format("this is a literal")
-
-        } 
-        case Identifier(value) => ""
-        case InfixExpression(left, op, right) => {
-          ""
+          add x2,x0,0 // load rhs to x2
+          %s
+          add x1,x0,0 // load lhs to x1
+          %s
+          """.format(rhs,lhs,operation)
         }
+      }
+
+    }
+    def countLocals(): Int = {
+      expr match {
+        case IntLiteral(_) | Identifier(_) => 1;
+        case InfixExpression(left,op,right)=> left.countLocals()+right.countLocals();
       }
     }
   }
@@ -91,21 +114,32 @@ object AST {
       stmt match {
         case AssignmentStatement(iden, expr) => {
           symbolTable.put(iden.value, stackTillNow);
-          stackTillNow = stackTillNow+8;
-          "str x0,[sp,%s]".format(stackTillNow-8)
+          stackTillNow = stackTillNow+16;
+          val exprCode = expr.codegen(symbolTable);
+          "%s\nstr x0,[sp,%s]".format(exprCode,stackTillNow-16)
         }
         case PrintStatement(expr) => {
           //assert(false, "No print while compiling:  ")
-          "# This is a comment\n"
+          val exprCode = expr.codegen(symbolTable)
+          stackTillNow = stackTillNow+16;
+          """
+          %s
+          add x0,x0,48
+          str x0,[sp,%d]
+          add x1,sp,%d
+          mov x0,#1
+          mov x2,#1
+          mov x16,#4
+          svc #0x80
+          """.format(exprCode,stackTillNow-16,stackTillNow-16)
         }
       }
     }
     def countLocals(): Int = {
       stmt match {
-        case AssignmentStatement(iden, expr) => {
-          1
-        }
-        case _ => 1
+        case AssignmentStatement(iden, expr) => 1+expr.countLocals()
+        
+        case PrintStatement(expr) => 1+expr.countLocals()
       }
     } 
   }
@@ -128,11 +162,17 @@ _main:
 
   
       val stackOffset = statements.asScala.map(_.countLocals()).sum
-      result+="sp,sp,-"+stackOffset*8+"\n";
+      result+="sub sp,sp,"+stackOffset*16+"\n";
       statements.forEach((statement: StatementNode) => {
         val fromStmt = statement.codegen(symbolTable)
         result = result + fromStmt + "\n";
       });
+      result+="add sp,sp,"+stackOffset*16+"\n";
+      result+="""
+      mov x0,#0
+      mov x16,#1
+      svc #0x80
+      """
       result
     }
   }
