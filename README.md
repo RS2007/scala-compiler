@@ -174,6 +174,8 @@ These queue on popping, will give the same results (this is cause there is no co
 
 #### Construction of interference graph
 
+![Interference graph]("./test.svg")
+
 - There is an optimized algorithm for this, but I am dumb
 - Go $n^2$
 - for each element in the liveout hashmap, create edges between all the elements
